@@ -1,0 +1,43 @@
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Archivos de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Logs
+*.log
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Archivos de desarrollo
+.git/
+.gitignore
+README.md
+docs/
+*.md
+
+# Scripts locales
+start.sh
+build.sh
+
+# Archivos de configuración local
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema
+.DS_Store
+Thumbs.db

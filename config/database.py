@@ -9,6 +9,11 @@ DATABASE_URL = os.getenv(
     "postgresql://postgres:password@localhost:5432/microcreditos"
 )
 
+# Render usa DATABASE_URL con formato: postgresql://user:password@host:port/database
+# Si estás en producción, asegúrate de que la URL esté correctamente formateada
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 # Crear el motor de la base de datos
 engine = create_engine(DATABASE_URL)
 
