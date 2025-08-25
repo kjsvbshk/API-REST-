@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Script para inicializar la base de datos con datos de ejemplo
+Script de inicialización de la base de datos
+Crea las tablas y agrega datos de ejemplo
 """
 
 import sys
@@ -8,27 +9,27 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy.orm import Session
-from config.database import SessionLocal, engine
+from config.database import engine, SessionLocal
 from models.models import Base, Cliente, Prestamo, Pago, EstadoPrestamo, EstadoPago
-from services.prestamo_service import PrestamoService
 from datetime import datetime, timedelta
 
-def init_db():
-    """Inicializar la base de datos con datos de ejemplo"""
-    
-    # Crear todas las tablas
+def init_database():
+    """Inicializa la base de datos creando las tablas"""
+    print("🗃️  Creando tablas en la base de datos...")
     Base.metadata.create_all(bind=engine)
-    
-    # Crear sesión de base de datos
+    print("✅ Tablas creadas correctamente")
+
+def create_sample_data():
+    """Crea datos de ejemplo para la aplicación"""
     db = SessionLocal()
     
     try:
         # Verificar si ya hay datos
         if db.query(Cliente).count() > 0:
-            print("La base de datos ya contiene datos. Saltando inicialización.")
+            print("ℹ️  La base de datos ya contiene datos, saltando creación de ejemplos")
             return
         
-        print("Creando datos de ejemplo...")
+        print("📝 Creando datos de ejemplo...")
         
         # Crear clientes de ejemplo
         clientes = [
@@ -54,7 +55,7 @@ def init_db():
                 email="carlos.lopez@email.com",
                 telefono="555666777",
                 direccion="Plaza Mayor 789, Ciudad",
-                documento_identidad="55556666"
+                documento_identidad="11223344"
             )
         ]
         
@@ -62,67 +63,83 @@ def init_db():
             db.add(cliente)
         
         db.commit()
-        print(f"✓ {len(clientes)} clientes creados")
+        print(f"✅ {len(clientes)} clientes creados")
         
         # Crear préstamos de ejemplo
         prestamos = [
-            {
-                "cliente_id": 1,
-                "monto": 5000,
-                "tasa_interes": 12.5,
-                "plazo_meses": 6
-            },
-            {
-                "cliente_id": 2,
-                "monto": 10000,
-                "tasa_interes": 15.0,
-                "plazo_meses": 12
-            },
-            {
-                "cliente_id": 3,
-                "monto": 7500,
-                "tasa_interes": 10.0,
-                "plazo_meses": 8
-            }
+            Prestamo(
+                cliente_id=1,
+                monto=5000.0,
+                tasa_interes=12.5,
+                plazo_meses=12,
+                fecha_vencimiento=datetime.now() + timedelta(days=365),
+                saldo_pendiente=5000.0,
+                cuota_mensual=450.0
+            ),
+            Prestamo(
+                cliente_id=2,
+                monto=10000.0,
+                tasa_interes=15.0,
+                plazo_meses=24,
+                fecha_vencimiento=datetime.now() + timedelta(days=730),
+                saldo_pendiente=10000.0,
+                cuota_mensual=485.0
+            )
         ]
         
-        for prestamo_data in prestamos:
-            try:
-                prestamo = PrestamoService.crear_prestamo(db, prestamo_data)
-                print(f"✓ Préstamo creado para cliente {prestamo_data['cliente_id']}: ${prestamo_data['monto']}")
-            except Exception as e:
-                print(f"✗ Error creando préstamo: {e}")
+        for prestamo in prestamos:
+            db.add(prestamo)
         
-        # Registrar algunos pagos de ejemplo
-        pagos_ejemplo = [
-            {"prestamo_id": 1, "monto": 1000, "numero_cuota": 1},
-            {"prestamo_id": 1, "monto": 1000, "numero_cuota": 2},
-            {"prestamo_id": 2, "monto": 1200, "numero_cuota": 1},
+        db.commit()
+        print(f"✅ {len(prestamos)} préstamos creados")
+        
+        # Crear pagos de ejemplo
+        pagos = [
+            Pago(
+                prestamo_id=1,
+                monto=450.0,
+                fecha_vencimiento=datetime.now() + timedelta(days=30),
+                numero_cuota=1
+            ),
+            Pago(
+                prestamo_id=1,
+                monto=450.0,
+                fecha_vencimiento=datetime.now() + timedelta(days=60),
+                numero_cuota=2
+            ),
+            Pago(
+                prestamo_id=2,
+                monto=485.0,
+                fecha_vencimiento=datetime.now() + timedelta(days=30),
+                numero_cuota=1
+            )
         ]
         
-        for pago_data in pagos_ejemplo:
-            try:
-                pago = PrestamoService.registrar_pago(
-                    db, 
-                    pago_data["prestamo_id"], 
-                    pago_data["monto"], 
-                    pago_data["numero_cuota"]
-                )
-                print(f"✓ Pago registrado: ${pago_data['monto']} para préstamo {pago_data['prestamo_id']}")
-            except Exception as e:
-                print(f"✗ Error registrando pago: {e}")
+        for pago in pagos:
+            db.add(pago)
         
-        print("\n✅ Base de datos inicializada exitosamente!")
-        print("\nDatos creados:")
-        print(f"- {db.query(Cliente).count()} clientes")
-        print(f"- {db.query(Prestamo).count()} préstamos")
-        print(f"- {db.query(Pago).count()} pagos")
+        db.commit()
+        print(f"✅ {len(pagos)} pagos creados")
+        
+        print("🎉 Datos de ejemplo creados exitosamente")
         
     except Exception as e:
-        print(f"Error durante la inicialización: {e}")
+        print(f"❌ Error al crear datos de ejemplo: {e}")
         db.rollback()
     finally:
         db.close()
 
+def main():
+    """Función principal"""
+    print("🚀 Inicializando base de datos...")
+    
+    try:
+        init_database()
+        create_sample_data()
+        print("✅ Inicialización completada exitosamente")
+    except Exception as e:
+        print(f"❌ Error durante la inicialización: {e}")
+        sys.exit(1)
+
 if __name__ == "__main__":
-    init_db()
+    main()

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config.database import engine
-from models import models
+from models.models import Base
 from routers import clientes, prestamos, pagos
 
 app = FastAPI(
@@ -28,7 +28,7 @@ app.include_router(pagos.router)
 async def startup_event():
     """Crear las tablas al iniciar la aplicación"""
     try:
-        models.Base.metadata.create_all(bind=engine)
+        Base.metadata.create_all(bind=engine)
         print("✅ Base de datos inicializada correctamente")
     except Exception as e:
         print(f"⚠️  Error al conectar con la base de datos: {e}")

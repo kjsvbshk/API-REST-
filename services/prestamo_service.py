@@ -80,7 +80,7 @@ class PrestamoService:
         
         cuotas = []
         for i in range(prestamo.plazo_meses):
-            fecha_vencimiento = prestamo.fecha_inicio + timedelta(days=(i + 1) * 30)
+            fecha_vencimiento = datetime.now() + timedelta(days=(i + 1) * 30)
             cuota = Pago(
                 prestamo_id=prestamo_id,
                 monto=cuota_mensual,

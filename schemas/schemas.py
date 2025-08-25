@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, validator
 from typing import Optional, List
 from datetime import datetime
 from models.models import EstadoPrestamo, EstadoPago
@@ -7,7 +7,7 @@ from models.models import EstadoPrestamo, EstadoPago
 class ClienteBase(BaseModel):
     nombre: str
     apellido: str
-    email: EmailStr
+    email: str
     telefono: str
     direccion: str
     documento_identidad: str
@@ -18,7 +18,7 @@ class ClienteCreate(ClienteBase):
 class ClienteUpdate(BaseModel):
     nombre: Optional[str] = None
     apellido: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     telefono: Optional[str] = None
     direccion: Optional[str] = None
     activo: Optional[bool] = None
