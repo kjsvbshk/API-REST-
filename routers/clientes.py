@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from config.database import get_db
-from models.models import Cliente
+from models.models import Cliente, Prestamo, Pago
 from schemas.schemas import ClienteCreate, ClienteUpdate, Cliente as ClienteSchema, ClienteConPrestamos
 from sqlalchemy.exc import IntegrityError
 
@@ -30,11 +30,13 @@ def crear_cliente(cliente: ClienteCreate, db: Session = Depends(get_db)):
 def obtener_clientes(
     skip: int = 0, 
     limit: int = 100, 
-    activo: bool = None,
+    activo: bool = True,  # Por defecto solo clientes activos
     db: Session = Depends(get_db)
 ):
     """
     Obtener lista de clientes con paginación y filtros
+    Por defecto muestra solo clientes activos (activo=True)
+    Para ver todos los clientes incluyendo inactivos, usar ?activo=
     """
     query = db.query(Cliente)
     
@@ -104,7 +106,7 @@ def actualizar_cliente(
 @router.delete("/{cliente_id}", status_code=status.HTTP_204_NO_CONTENT)
 def eliminar_cliente(cliente_id: int, db: Session = Depends(get_db)):
     """
-    Eliminar un cliente (marcar como inactivo)
+    Eliminar un cliente físicamente con eliminación en cascada
     """
     cliente = db.query(Cliente).filter(Cliente.id == cliente_id).first()
     if not cliente:
@@ -113,8 +115,27 @@ def eliminar_cliente(cliente_id: int, db: Session = Depends(get_db)):
             detail="Cliente no encontrado"
         )
     
-    # Marcar como inactivo en lugar de eliminar físicamente
-    cliente.activo = False
-    db.commit()
-    
-    return None
+    try:
+        # Eliminar pagos asociados a los préstamos del cliente
+        prestamos_ids = db.query(Prestamo.id).filter(Prestamo.cliente_id == cliente_id).all()
+        prestamos_ids = [p[0] for p in prestamos_ids]
+        
+        if prestamos_ids:
+            # Eliminar pagos de los préstamos del cliente
+            db.query(Pago).filter(Pago.prestamo_id.in_(prestamos_ids)).delete(synchronize_session=False)
+            
+            # Eliminar préstamos del cliente
+            db.query(Prestamo).filter(Prestamo.cliente_id == cliente_id).delete(synchronize_session=False)
+        
+        # Eliminar el cliente
+        db.delete(cliente)
+        db.commit()
+        
+        return None
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al eliminar el cliente: {str(e)}"
+        )
